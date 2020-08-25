@@ -1,16 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Connection, getRepository, Repository, UpdateResult } from 'typeorm';
+import { DeleteResult, getConnection, Repository } from 'typeorm';
 import { Ingredient } from './ingredient.entity';
 import { IngredientDTO } from './ingredient.dto';
-import { Recipe } from '../recipes/recipe.entity';
 
 @Injectable()
 export class IngredientsService {
   constructor(
     @InjectRepository(Ingredient)
-    private ingredientsRepository: Repository<Ingredient>,
-    private connection: Connection
+    private ingredientsRepository: Repository<Ingredient>
   ) {}
 
 
@@ -22,7 +20,6 @@ export class IngredientsService {
     return this.ingredientsRepository.save(ingredient);
   }
 
-  // TODO : DOESN'T WORK YET
   async update(id: string, ingredient: Ingredient): Promise<Ingredient> {
     return await this.ingredientsRepository.save(ingredient);
   }
@@ -35,9 +32,30 @@ export class IngredientsService {
     return this.ingredientsRepository.findOne(id);
   }
 
-  // TODO : Check if relations in jointables exists, if so remove it and then remove the ingredient
   // https://typeorm.io/#/many-to-many-relations/deleting-many-to-many-relations
-  async remove(id: string): Promise<void> {
-    await this.ingredientsRepository.delete(id);
+  async remove(ingredientId: string): Promise<DeleteResult> {
+
+    const ingredient = await getConnection().manager.findOne(Ingredient, ingredientId);
+    console.log(ingredient);
+
+    if(ingredient) {
+      ingredient.recipes = await getConnection()
+        .createQueryBuilder()
+        .relation(Ingredient, "recipes")
+        .of(ingredient)
+        .loadMany();
+      console.log(ingredient);
+
+      if (Array.isArray(ingredient.recipes) && ingredient.recipes.length) {
+        throw new HttpException({
+          status: HttpStatus.CONFLICT,
+          error: 'Conflict',
+        }, HttpStatus.CONFLICT);
+      } else {
+        return this.ingredientsRepository.delete(ingredientId);
+      }
+    } else {
+      throw new HttpException('Ingredient not found', HttpStatus.NOT_FOUND)
+    }
   }
 }

@@ -5,6 +5,7 @@ import { Ingredient } from './ingredients/ingredient.entity';
 import { IngredientsModule } from './ingredients/ingredients.module';
 import { RecipesModule } from './recipes/recipes.module';
 import { Recipe } from './recipes/recipe.entity';
+import { Quantity } from './quantities/quantity.entity';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { Recipe } from './recipes/recipe.entity';
       username: 'flo',
       password: 'flo',
       database: 'fablife',
-      entities: [Ingredient, Recipe],
+      entities: [Ingredient, Recipe, Quantity],
       synchronize: true,
       autoLoadEntities: true,
     }),
